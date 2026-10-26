@@ -11,13 +11,18 @@ struct KeypadView: View {
     var body: some View {
         VStack(spacing: 10) {
             grid
-            Button(action: onSkip) {
-                Label("Skip", systemImage: "forward.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+            HStack(spacing: 10) {
+                Button(action: onSkip) {
+                    Label("Skip", systemImage: "forward.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                }
+                .buttonStyle(.bordered)
+                .tint(Color.gray)
+                key(systemImage: "delete.left") { onKey(.delete) }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("Delete")
             }
-            .buttonStyle(.bordered)
-            .tint(Color.gray)
         }
     }
 
@@ -27,15 +32,17 @@ struct KeypadView: View {
                 key("\(d)") { onKey(.digit(d)) }
             }
             if answerFormat == .fraction {
+                key("−", style: .accent) { onKey(.negate) }
+                    .accessibilityLabel("Minus sign")
+                key("0") { onKey(.digit(0)) }
                 key("/", style: .accent) { onKey(.slash) }
                     .accessibilityLabel("Fraction bar")
             } else {
+                Color.clear.frame(minHeight: 60)
+                key("0") { onKey(.digit(0)) }
                 key(".", style: .accent) { onKey(.point) }
                     .accessibilityLabel("Decimal point")
             }
-            key("0") { onKey(.digit(0)) }
-            key(systemImage: "delete.left") { onKey(.delete) }
-                .accessibilityLabel("Delete")
         }
     }
 
@@ -45,7 +52,7 @@ struct KeypadView: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 30, weight: .medium, design: .rounded))
-                .frame(maxWidth: .infinity, minHeight: 64)
+                .frame(maxWidth: .infinity, minHeight: 60)
         }
         .buttonStyle(KeyButtonStyle(accent: style == .accent))
     }
@@ -54,7 +61,7 @@ struct KeypadView: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 26, weight: .medium))
-                .frame(maxWidth: .infinity, minHeight: 64)
+                .frame(maxWidth: .infinity, minHeight: 60)
         }
         .buttonStyle(KeyButtonStyle(accent: false))
     }

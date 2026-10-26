@@ -22,7 +22,7 @@ jobs:
       - name: Build app for simulator
         run: |
           xcodebuild build \
-            -project FractionSprint.xcodeproj \
-            -scheme FractionSprint \
+            -project Fractionator.xcodeproj \
+            -scheme Fractionator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO

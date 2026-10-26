@@ -16,19 +16,27 @@ public struct GameSettings: Codable, Equatable, Sendable {
     public var requireLowestTerms: Bool
     /// Fraction → decimal may use denominators like 3 or 7, answered rounded to 3 places.
     public var includeRepeatingDecimals: Bool
+    /// Subtraction may give negative answers (3/4 − 5/6 = −1/12).
+    public var allowNegativeAnswers: Bool
+
+    public static let defaultKinds: Set<ProblemKind> = [
+        .addition, .subtraction, .multiplication, .division,
+        .power, .oneMinusPower, .simplify, .fractionToDecimal,
+    ]
 
     public static let repeatingDecimalPlaces = 3
 
     public init(
         durationSeconds: Int = 120,
-        enabledKinds: Set<ProblemKind> = [.addition, .subtraction, .multiplication, .division],
+        enabledKinds: Set<ProblemKind> = GameSettings.defaultKinds,
         numeratorMin: Int = 1,
         numeratorMax: Int = 12,
         denominatorMin: Int = 2,
         denominatorMax: Int = 12,
         properFractionsOnly: Bool = true,
-        requireLowestTerms: Bool = false,
-        includeRepeatingDecimals: Bool = false
+        requireLowestTerms: Bool = true,
+        includeRepeatingDecimals: Bool = true,
+        allowNegativeAnswers: Bool = true
     ) {
         self.durationSeconds = durationSeconds
         self.enabledKinds = enabledKinds
@@ -39,6 +47,7 @@ public struct GameSettings: Codable, Equatable, Sendable {
         self.properFractionsOnly = properFractionsOnly
         self.requireLowestTerms = requireLowestTerms
         self.includeRepeatingDecimals = includeRepeatingDecimals
+        self.allowNegativeAnswers = allowNegativeAnswers
     }
 
     /// Settings forced into a playable state: ranges ordered and in bounds, at least one kind enabled.
@@ -69,6 +78,7 @@ public struct GameSettings: Codable, Equatable, Sendable {
             properFractionsOnly ? "p1" : "p0",
             requireLowestTerms ? "l1" : "l0",
             includeRepeatingDecimals ? "r1" : "r0",
+            allowNegativeAnswers ? "m1" : "m0",
         ].joined(separator: "|")
     }
 
@@ -77,7 +87,7 @@ public struct GameSettings: Codable, Equatable, Sendable {
         let kinds = ProblemKind.allCases.filter(enabledKinds.contains).map(\.shortTitle).joined(separator: " ")
         let time = durationSeconds % 60 == 0 ? "\(durationSeconds / 60) min" : "\(durationSeconds)s"
         var parts = [time, kinds]
-        if enabledKinds.contains(where: \.isArithmetic) {
+        if enabledKinds.contains(where: \.usesNumeratorRange) {
             parts.append("n \(numeratorMin)–\(numeratorMax)")
         }
         parts.append("d \(denominatorMin)–\(denominatorMax)")
@@ -87,7 +97,7 @@ public struct GameSettings: Codable, Equatable, Sendable {
     // Decoding tolerates missing keys so stored settings survive new options in later versions.
     private enum CodingKeys: String, CodingKey {
         case durationSeconds, enabledKinds, numeratorMin, numeratorMax, denominatorMin, denominatorMax
-        case properFractionsOnly, requireLowestTerms, includeRepeatingDecimals
+        case properFractionsOnly, requireLowestTerms, includeRepeatingDecimals, allowNegativeAnswers
     }
 
     public init(from decoder: Decoder) throws {
@@ -104,6 +114,7 @@ public struct GameSettings: Codable, Equatable, Sendable {
         properFractionsOnly = try c.decodeIfPresent(Bool.self, forKey: .properFractionsOnly) ?? d.properFractionsOnly
         requireLowestTerms = try c.decodeIfPresent(Bool.self, forKey: .requireLowestTerms) ?? d.requireLowestTerms
         includeRepeatingDecimals = try c.decodeIfPresent(Bool.self, forKey: .includeRepeatingDecimals) ?? d.includeRepeatingDecimals
+        allowNegativeAnswers = try c.decodeIfPresent(Bool.self, forKey: .allowNegativeAnswers) ?? d.allowNegativeAnswers
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -117,5 +128,6 @@ public struct GameSettings: Codable, Equatable, Sendable {
         try c.encode(properFractionsOnly, forKey: .properFractionsOnly)
         try c.encode(requireLowestTerms, forKey: .requireLowestTerms)
         try c.encode(includeRepeatingDecimals, forKey: .includeRepeatingDecimals)
+        try c.encode(allowNegativeAnswers, forKey: .allowNegativeAnswers)
     }
 }

@@ -41,11 +41,11 @@ jobs:
       - name: Archive
         run: |
           xcodebuild archive \
-            -project FractionSprint.xcodeproj \
-            -scheme FractionSprint \
+            -project Fractionator.xcodeproj \
+            -scheme Fractionator \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath build/FractionSprint.xcarchive \
+            -archivePath build/Fractionator.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
@@ -58,7 +58,7 @@ jobs:
         run: |
           plutil -insert teamID -string "${{ secrets.APPLE_TEAM_ID }}" ExportOptions.plist
           xcodebuild -exportArchive \
-            -archivePath build/FractionSprint.xcarchive \
+            -archivePath build/Fractionator.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
             -exportPath build/export \
             -allowProvisioningUpdates \

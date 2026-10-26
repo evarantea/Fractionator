@@ -1,10 +1,13 @@
-# Fraction Sprint
+# Fractionator
 
 A zetamac-style speed drill for fractions, for quant interview prep. Pick your problem types and number
 ranges, hit Start, and answer as many as you can before the timer runs out. The next problem appears
 as soon as your answer is right.
 
-- Add, subtract, multiply and divide fractions; fraction ↔ decimal conversions
+- Add, subtract (including negative answers like 3/4 − 5/6 = −1/12), multiply and divide
+- Powers like (2/3)³ = 8/27 and the "at least once" pattern 1 − (5/6)² = 11/36
+- Simplify: 12/18 = 2/3
+- Fraction → decimal, repeating ones to 3 d.p. (1/7 ≈ 0.143); decimal → fraction
 - Configurable numerator/denominator ranges, proper-fractions-only, lowest-terms-only
 - 30s / 1 min / 2 min / 5 min runs
 - On-device history with best score, recent average and a score chart per settings combination
@@ -15,7 +18,7 @@ as soon as your answer is right.
 | Path | What |
 | --- | --- |
 | `Packages/FractionCore` | Pure Swift logic: `Fraction`, answer parsing, problem generator, game engine, history stats. Unit tested. |
-| `FractionSprint/` | SwiftUI app (iOS 17+, iPhone). |
+| `Fractionator/` | SwiftUI app (iOS 17+, iPhone). |
 | `project.yml` | XcodeGen spec; the `.xcodeproj` is generated, not committed. |
 | `.github/workflows/ci.yml` | Tests + simulator build on every push. |
 | `.github/workflows/testflight.yml` | Manual: signed archive uploaded to App Store Connect / TestFlight. |
@@ -26,7 +29,7 @@ as soon as your answer is right.
 ```sh
 brew install xcodegen
 xcodegen generate
-open FractionSprint.xcodeproj
+open Fractionator.xcodeproj
 swift test --package-path Packages/FractionCore
 ```
 

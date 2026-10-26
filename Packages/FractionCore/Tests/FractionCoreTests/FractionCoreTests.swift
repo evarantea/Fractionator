@@ -30,6 +30,37 @@ final class FractionTests: XCTestCase {
     }
 }
 
+final class ExampleProblemTests: XCTestCase {
+    // The examples the app is meant to drill.
+    func testExamples() {
+        XCTAssertEqual(Fraction(1, 6) + Fraction(1, 9), Fraction(5, 18))
+        XCTAssertEqual(Fraction(3, 4) - Fraction(5, 6), Fraction(-1, 12))
+        XCTAssertEqual(Fraction(1, 2).power(5), Fraction(1, 32))
+        XCTAssertEqual(Fraction(2, 3).power(3), Fraction(8, 27))
+        XCTAssertEqual(Fraction(1) - Fraction(5, 6).power(2), Fraction(11, 36))
+        XCTAssertEqual(Fraction(1, 8).terminatingDecimalString, "0.125")
+        XCTAssertEqual(Fraction(1, 6).decimalString(places: 3), "0.167")
+        XCTAssertEqual(Fraction(1, 7).decimalString(places: 3), "0.143")
+        XCTAssertEqual(Fraction(1, 9).decimalString(places: 3), "0.111")
+        XCTAssertEqual(Fraction(3, 7).decimalString(places: 3), "0.429")
+    }
+
+    func testPromptTexts() {
+        let power = Problem(kind: .power, left: Fraction(2, 3), exponent: 3, answer: Fraction(8, 27))
+        XCTAssertEqual(power.promptText, "(2/3)³ = ?")
+        let oneMinus = Problem(kind: .oneMinusPower, left: Fraction(5, 6), exponent: 2, answer: Fraction(11, 36))
+        XCTAssertEqual(oneMinus.promptText, "1 − (5/6)² = ?")
+        let simplify = Problem(kind: .simplify, left: Fraction(2, 3), written: WrittenFraction(12, 18), answer: Fraction(2, 3))
+        XCTAssertEqual(simplify.promptText, "12/18 = ?")
+        XCTAssertTrue(simplify.isCorrect("2/3", requireLowestTerms: false))
+        XCTAssertFalse(simplify.isCorrect("4/6", requireLowestTerms: false))
+        let negative = Problem(kind: .subtraction, left: Fraction(3, 4), right: Fraction(5, 6), answer: Fraction(-1, 12))
+        XCTAssertTrue(negative.isCorrect("-1/12", requireLowestTerms: true))
+        XCTAssertFalse(negative.isCorrect("1/12", requireLowestTerms: true))
+        XCTAssertEqual(Problem.superscript(12), "¹²")
+    }
+}
+
 final class ParsedAnswerTests: XCTestCase {
     func testParsing() {
         XCTAssertEqual(ParsedAnswer.parse("3/4")?.value, Fraction(3, 4))
@@ -96,7 +127,8 @@ final class GeneratorTests: XCTestCase {
         let settings = GameSettings(enabledKinds: Set(ProblemKind.allCases), includeRepeatingDecimals: true)
         var gen = ProblemGenerator(settings: settings, rng: SplitMix64(seed: 42))
         var seen = Set<ProblemKind>()
-        for _ in 0..<2000 {
+        var sawNegative = false
+        for _ in 0..<3000 {
             let p = gen.next()
             seen.insert(p.kind)
             XCTAssertTrue(p.isCorrect(p.answerText, requireLowestTerms: true), p.promptText)
@@ -104,15 +136,30 @@ final class GeneratorTests: XCTestCase {
             case .addition: XCTAssertEqual(p.answer, p.left + p.right!)
             case .subtraction:
                 XCTAssertEqual(p.answer, p.left - p.right!)
-                XCTAssertGreaterThan(p.answer, Fraction(0))
+                XCTAssertNotEqual(p.answer, Fraction(0))
+                if p.answer < Fraction(0) { sawNegative = true }
             case .multiplication: XCTAssertEqual(p.answer, p.left * p.right!)
             case .division: XCTAssertEqual(p.answer, p.left / p.right!)
+            case .power:
+                let n = try! XCTUnwrap(p.exponent)
+                XCTAssertTrue((2...5).contains(n))
+                XCTAssertEqual(p.answer, p.left.power(n))
+                XCTAssertLessThanOrEqual(p.answer.denominator, 250)
+            case .oneMinusPower:
+                let n = try! XCTUnwrap(p.exponent)
+                XCTAssertTrue((2...3).contains(n))
+                XCTAssertEqual(p.answer, Fraction(1) - p.left.power(n))
+            case .simplify:
+                let w = try! XCTUnwrap(p.written)
+                XCTAssertEqual(Fraction(w.numerator, w.denominator), p.answer)
+                XCTAssertNotEqual(w.denominator, p.answer.denominator, "must need simplifying")
+                XCTAssertFalse(p.isCorrect(w.description, requireLowestTerms: false))
             case .fractionToDecimal, .decimalToFraction:
                 XCTAssertGreaterThan(p.left, Fraction(0))
                 XCTAssertLessThan(p.left, Fraction(1))
             }
-            if p.kind.isArithmetic {
-                for f in [p.left, p.right!] {
+            if let right = p.right {
+                for f in [p.left, right] {
                     XCTAssertGreaterThan(f, Fraction(0))
                     XCTAssertLessThan(f, Fraction(1), "proper fractions only")
                     XCTAssertFalse(f.isWhole)
@@ -123,10 +170,20 @@ final class GeneratorTests: XCTestCase {
             }
         }
         XCTAssertEqual(seen, Set(ProblemKind.allCases))
+        XCTAssertTrue(sawNegative)
+    }
+
+    func testPositiveSubtractionWhenNegativesOff() {
+        let settings = GameSettings(enabledKinds: [.subtraction], allowNegativeAnswers: false)
+        var gen = ProblemGenerator(settings: settings, rng: SplitMix64(seed: 11))
+        for _ in 0..<500 {
+            XCTAssertGreaterThan(gen.next().answer, Fraction(0))
+        }
     }
 
     func testRespectsRanges() {
-        let settings = GameSettings(numeratorMin: 1, numeratorMax: 5, denominatorMin: 6, denominatorMax: 9)
+        let settings = GameSettings(enabledKinds: [.addition, .subtraction, .multiplication, .division],
+                                    numeratorMin: 1, numeratorMax: 5, denominatorMin: 6, denominatorMax: 9)
         var gen = ProblemGenerator(settings: settings, rng: SplitMix64(seed: 7))
         for _ in 0..<500 {
             let p = gen.next()
@@ -139,12 +196,23 @@ final class GeneratorTests: XCTestCase {
     }
 
     func testTerminatingOnlyWithoutRepeatingOption() {
-        let settings = GameSettings(enabledKinds: [.fractionToDecimal], denominatorMin: 2, denominatorMax: 12)
+        let settings = GameSettings(enabledKinds: [.fractionToDecimal], denominatorMin: 2, denominatorMax: 12,
+                                    includeRepeatingDecimals: false)
         var gen = ProblemGenerator(settings: settings, rng: SplitMix64(seed: 1))
         for _ in 0..<300 {
             let p = gen.next()
             XCTAssertTrue(p.left.hasTerminatingDecimal)
             XCTAssertNil(p.roundedPlaces)
+        }
+    }
+
+    func testRepeatingDecimalsRoundToThreePlaces() {
+        let settings = GameSettings(enabledKinds: [.fractionToDecimal], denominatorMin: 7, denominatorMax: 7)
+        var gen = ProblemGenerator(settings: settings, rng: SplitMix64(seed: 4))
+        for _ in 0..<50 {
+            let p = gen.next()
+            XCTAssertEqual(p.roundedPlaces, 3)
+            XCTAssertEqual(p.answerText.count, 5, p.answerText) // "0.ddd"
         }
     }
 
@@ -172,6 +240,7 @@ final class EngineTests: XCTestCase {
             switch c {
             case "/": advanced = engine.press(.slash)
             case ".": advanced = engine.press(.point)
+            case "-": advanced = engine.press(.negate)
             default: advanced = engine.press(.digit(Int(String(c))!))
             }
         }
@@ -218,6 +287,35 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(record.settingsKey, GameSettings(durationSeconds: 60).key)
     }
 
+    func testNegateTogglesSign() {
+        var engine = GameEngine(settings: GameSettings(enabledKinds: [.addition]), rng: SplitMix64(seed: 2))
+        engine.press(.digit(1))
+        engine.press(.negate)
+        XCTAssertEqual(engine.input, "-1")
+        engine.press(.negate)
+        XCTAssertEqual(engine.input, "1")
+        engine.press(.clear)
+        engine.press(.negate)
+        engine.press(.slash) // no digits yet, so no fraction bar
+        XCTAssertEqual(engine.input, "-")
+    }
+
+    func testNegativeAnswerScores() {
+        var engine = GameEngine(settings: GameSettings(enabledKinds: [.subtraction]), rng: SplitMix64(seed: 8))
+        var found = false
+        for _ in 0..<200 where !found {
+            if engine.current.answer < Fraction(0) {
+                found = true
+                engine.press(.negate)
+                XCTAssertTrue(enter(String(engine.current.answerText.dropFirst()), into: &engine))
+            } else {
+                engine.skip()
+            }
+        }
+        XCTAssertTrue(found)
+        XCTAssertEqual(engine.score, 1)
+    }
+
     func testPointPrefixesZero() {
         var engine = GameEngine(settings: GameSettings(enabledKinds: [.fractionToDecimal]), rng: SplitMix64(seed: 2))
         engine.press(.point)
@@ -251,7 +349,7 @@ final class SettingsAndHistoryTests: XCTestCase {
 
     func testSummaryAndKey() {
         let s = GameSettings()
-        XCTAssertEqual(s.summary, "2 min · + − × ÷ · n 1–12 · d 2–12")
+        XCTAssertEqual(s.summary, "2 min · + − × ÷ xⁿ 1−xⁿ simp →dec · n 1–12 · d 2–12")
         XCTAssertNotEqual(s.key, GameSettings(durationSeconds: 60).key)
     }
 

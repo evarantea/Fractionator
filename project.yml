@@ -1,4 +1,4 @@
-name: FractionSprint
+name: Fractionator
 options:
   bundleIdPrefix: com.evarantea
   deploymentTarget:
@@ -13,21 +13,21 @@ settings:
     CURRENT_PROJECT_VERSION: 1
     SWIFT_VERSION: "5.0"
 targets:
-  FractionSprint:
+  Fractionator:
     type: application
     platform: iOS
     sources:
-      - path: FractionSprint
+      - path: Fractionator
     dependencies:
       - package: FractionCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.evarantea.fractionsprint
-        PRODUCT_NAME: FractionSprint
+        PRODUCT_BUNDLE_IDENTIFIER: com.evarantea.fractionator
+        PRODUCT_NAME: Fractionator
         TARGETED_DEVICE_FAMILY: "1"
-        INFOPLIST_FILE: FractionSprint/Info.plist
+        INFOPLIST_FILE: Fractionator/Info.plist
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Fraction Sprint
+        INFOPLIST_KEY_CFBundleDisplayName: Fractionator
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -37,9 +37,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
 schemes:
-  FractionSprint:
+  Fractionator:
     build:
       targets:
-        FractionSprint: all
+        Fractionator: all
     archive:
       config: Release

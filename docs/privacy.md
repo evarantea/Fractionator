@@ -1,8 +1,8 @@
-# Fraction Sprint privacy policy
+# Fractionator privacy policy
 
 Last updated: 26 October 2026
 
-Fraction Sprint does not collect, store on a server, share or sell any personal data.
+Fractionator does not collect, store on a server, share or sell any personal data.
 
 - There is no account or sign-in.
 - The app makes no network requests and contains no analytics, advertising or tracking code.

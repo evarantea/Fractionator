@@ -15,7 +15,7 @@ struct AboutView: View {
             List {
                 Section("How to play") {
                     Text("Answer as many problems as you can before time runs out. The next problem appears the moment your answer is right, so there is no enter key.")
-                    Text("Type a fraction with the / key, for example 3 / 4. Whole numbers need no /. Any equivalent fraction counts unless \"Require lowest terms\" is on.")
+                    Text("Type a fraction with the / key, for example 3 / 4, and use − for negative answers. Whole numbers need no /. With \"Require lowest terms\" off, any equivalent fraction counts.")
                     Text("Stuck? Skip costs nothing but time, and the answers to skipped problems are shown at the end.")
                 }
                 Section("Privacy") {

@@ -25,6 +25,10 @@ public struct ProblemGenerator: Sendable {
     private var rng: SplitMix64
     private var last: Problem?
 
+    /// Powers stay mental-maths sized: (5/6)³ = 125/216 and (2/3)⁵ = 32/243 are in, (6/7)³ is out.
+    static let maxPowerDenominator = 250
+    static let maxSimplifyDenominator = 144
+
     /// Denominators used when the configured range has none that give a terminating decimal.
     static let fallbackTerminatingDenominators = [2, 4, 5, 8]
 
@@ -55,14 +59,14 @@ public struct ProblemGenerator: Sendable {
             return Problem(kind: kind, left: a, right: b, answer: a + b)
 
         case .subtraction:
-            // Keep answers positive, like zetamac's subtraction (reverse of addition).
             var a = operand(), b = operand()
             var tries = 0
             while a == b && tries < 10 {
                 b = operand()
                 tries += 1
             }
-            if a < b { swap(&a, &b) }
+            // With negatives off, keep answers positive like zetamac's subtraction.
+            if !settings.allowNegativeAnswers && a < b { swap(&a, &b) }
             return Problem(kind: kind, left: a, right: b, answer: a - b)
 
         case .multiplication:
@@ -72,6 +76,21 @@ public struct ProblemGenerator: Sendable {
         case .division:
             let a = operand(), b = operand()
             return Problem(kind: kind, left: a, right: b, answer: a / b)
+
+        case .power:
+            let (base, n) = powerBase(exponents: 2...5)
+            return Problem(kind: kind, left: base, exponent: n, answer: base.power(n))
+
+        case .oneMinusPower:
+            let (base, n) = powerBase(exponents: 2...3)
+            return Problem(kind: kind, left: base, exponent: n, answer: Fraction(1) - base.power(n))
+
+        case .simplify:
+            let reduced = operand()
+            let maxFactor = max(2, min(12, ProblemGenerator.maxSimplifyDenominator / reduced.denominator))
+            let k = Int.random(in: 2...maxFactor, using: &rng)
+            let written = WrittenFraction(reduced.numerator * k, reduced.denominator * k)
+            return Problem(kind: kind, left: reduced, written: written, answer: reduced)
 
         case .fractionToDecimal:
             let f = conversionFraction(allowRepeating: settings.includeRepeatingDecimals)
@@ -108,6 +127,21 @@ public struct ProblemGenerator: Sendable {
             ? Int.random(in: s.numeratorMin...upper, using: &rng)
             : Int.random(in: s.numeratorMin...s.numeratorMax, using: &rng)
         return Fraction(n, d)
+    }
+
+    /// A base and exponent whose result keeps a denominator of at most `maxPowerDenominator`.
+    private mutating func powerBase(exponents: ClosedRange<Int>) -> (Fraction, Int) {
+        for _ in 0..<50 {
+            let base = operand()
+            let fitting = exponents.filter { n in
+                base.power(n).denominator <= ProblemGenerator.maxPowerDenominator
+                    && abs(base.power(n).numerator) <= ProblemGenerator.maxPowerDenominator * 4
+            }
+            if let n = fitting.randomElement(using: &rng) { return (base, n) }
+        }
+        // Ranges too large for any power to fit: fall back to small classics.
+        let base = [Fraction(1, 2), Fraction(2, 3), Fraction(5, 6), Fraction(3, 4)].randomElement(using: &rng)!
+        return (base, exponents.lowerBound)
     }
 
     /// A proper fraction (0 < f < 1) for conversion drills, drawn from the denominator range.

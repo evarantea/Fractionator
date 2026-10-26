@@ -6,6 +6,8 @@ public struct GameEngine: Sendable {
         case digit(Int)
         case slash
         case point
+        /// Toggles a leading minus sign.
+        case negate
         case delete
         case clear
     }
@@ -40,7 +42,7 @@ public struct GameEngine: Sendable {
             input.append(String(d))
         case .slash:
             guard current.answerFormat == .fraction,
-                  !input.isEmpty, !input.contains("/"), !input.contains(".")
+                  input.last?.isNumber == true, !input.contains("/"), !input.contains(".")
             else { return false }
             input.append("/")
         case .point:
@@ -49,6 +51,13 @@ public struct GameEngine: Sendable {
                   input.count < GameEngine.maxInputLength
             else { return false }
             input.append(input.isEmpty ? "0." : ".")
+        case .negate:
+            guard current.answerFormat == .fraction else { return false }
+            if input.hasPrefix("-") {
+                input.removeFirst()
+            } else if input.count < GameEngine.maxInputLength {
+                input.insert("-", at: input.startIndex)
+            }
         case .delete:
             if !input.isEmpty { input.removeLast() }
             return false

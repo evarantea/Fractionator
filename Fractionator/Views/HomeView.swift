@@ -17,7 +17,7 @@ struct HomeView: View {
                 answersSection
                 durationSection
             }
-            .navigationTitle("Fraction Sprint")
+            .navigationTitle("Fractionator")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showingAbout = true } label: { Image(systemName: "info.circle") }
@@ -113,11 +113,18 @@ struct HomeView: View {
     }
 
     private var answersSection: some View {
-        Section("Answers") {
+        Section {
             Toggle("Require lowest terms", isOn: $model.settings.requireLowestTerms)
+            if model.settings.enabledKinds.contains(.subtraction) {
+                Toggle("Negative answers", isOn: $model.settings.allowNegativeAnswers)
+            }
             if model.settings.enabledKinds.contains(.fractionToDecimal) {
                 Toggle("Repeating decimals (3 d.p.)", isOn: $model.settings.includeRepeatingDecimals)
             }
+        } header: {
+            Text("Answers")
+        } footer: {
+            Text("Simplify problems always need lowest terms. Use the − key for negative answers.")
         }
     }
 

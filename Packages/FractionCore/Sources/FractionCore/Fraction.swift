@@ -38,6 +38,12 @@ public struct Fraction: Hashable, Codable, Sendable, Comparable, CustomStringCon
         return Fraction(a.numerator * b.denominator, a.denominator * b.numerator)
     }
 
+    /// This fraction raised to a non-negative whole power.
+    public func power(_ n: Int) -> Fraction {
+        precondition(n >= 0, "Negative exponents are not supported")
+        return (0..<n).reduce(Fraction(1)) { acc, _ in acc * self }
+    }
+
     public static func < (a: Fraction, b: Fraction) -> Bool {
         a.numerator * b.denominator < b.numerator * a.denominator
     }
